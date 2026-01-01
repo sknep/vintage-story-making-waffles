@@ -1,0 +1,19 @@
+{
+  code: "wafflebatter",
+  ingredients: [
+    { 
+      type: "item", 
+      code: "game:flour-*", 
+      allowedVariants: ["flax", "rice", "rye", "spelt", "cassava", "amaranth", "sunflower"],
+      quantity: 2,
+      consumeQuantity: 2
+    },
+    { 
+      type: "item", 
+      code: "game:milkportion",  
+      litres: 0.2 
+    }
+  ],
+  output: { type: "item", code: "makingwaffles:wafflebatterportion",  litres: 0.2 },
+  perishableProps: { freshHours: { avg: 144 }, transitionHours: { avg: 48 }, transitionRatio: 1, transitionedStack: { type: "item", code: "game:rot" } },
+}

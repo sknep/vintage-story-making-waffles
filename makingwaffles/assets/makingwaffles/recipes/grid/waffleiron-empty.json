@@ -1,0 +1,12 @@
+[
+  {
+    ingredientPattern: "P_P,_T_",
+    ingredients: {
+      "P": { type: "item", code: "makingwaffles:waffleiron-plate" },
+      "T": { type: "item", code: "game:tongs" }
+    },
+    width: 3,
+    height: 2,
+    output: { type: "block", code: "makingwaffles:waffleiron-empty" }
+  }
+]

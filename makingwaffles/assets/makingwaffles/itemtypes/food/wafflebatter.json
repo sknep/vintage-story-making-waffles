@@ -1,0 +1,62 @@
+{
+  code: "wafflebatterportion",
+	class: "ItemLiquidPortion",
+	matterState: "liquid",
+	attributes: {
+		handbook: {
+			ignoreCreativeInvStacks: true
+		},
+		inContainerTexture: { base: "game:block/food/pie/amaranth2" },
+		inBowlShape: { base: "game:block/food/meal/liquid" },
+		nutritionPropsWhenInMeal: { satiety: 200, foodcategory: "Grain" },
+		waterTightContainerProps: {
+			containable: true,
+			isopaque: true,
+			itemsPerLitre: 100,
+		  texture: { base: "game:block/food/pie/amaranth2" },
+			allowSpill: true,
+			whenSpilled: { 
+				action: "DropContents",
+				stack: { type: "item", code: "makingwaffles:wafflebatterportion" } 
+			},
+			nutritionPropsPerLitre: {
+				satiety: 30,
+				foodcategory: "Grain"
+			},
+		}
+  },
+  shape: { base: "game:item/liquid" },
+  texture: { base: "game:block/food/pie/amaranth2" },
+  transitionableProps: [{
+    type: "Perish",
+    freshHours: { avg: 48 },
+    transitionHours: { avg: 24 },
+    transitionedStack: { type: "item", code: "game:rot" },
+    transitionRatio: 0.2
+  }],
+
+  creativeinventoryStacks: [ { tabs: ["general", "liquids"], stacks: [ { type: "block", code: "game:woodbucket", attributes: { ucontents: [ { type:"item", code: "makingwaffles:wafflebatterportion", makefull: true } ] } } ] } ],
+	maxstacksize: 5000,
+	materialDensity: 200,
+	combustibleProps: {
+		meltingPoint: 190,
+		meltingDuration: 10,
+		smeltedRatio: 1,
+		smeltingType: "convert",
+		smeltedStack: { type: "item", code: "makingwaffles:waffle" },
+		requiresContainer: false
+	},
+	guiTransform: {
+		translation: { x: 0, y: 1, z: 0 },
+		rotation: { x: 123, y: -33, z: -13 },
+		origin: { x: 0.5, y: 0, z: 0.5 },
+		scale: 1.4
+	},
+	fpHandTransform: {
+		translation: { x: 0, y: 0, z: 0 },
+		rotation: { x: 25, y: 157, z: -5 }
+	},
+	tpHandTransform: {
+		translation: { x: -1.5, y: -1, z: -1.4 }
+	}
+}

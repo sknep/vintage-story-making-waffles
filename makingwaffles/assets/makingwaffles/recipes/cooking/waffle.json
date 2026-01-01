@@ -1,0 +1,21 @@
+{
+  code: "waffle",
+  perishableProps: { 
+    freshHours: { avg: 144 },
+    transitionHours: { avg: 48 }, 
+    transitionRatio: 1, 
+    transitionedStack: { type: "item", code: "game:rot" } 
+  },
+  shape: { base: "makingwaffles:block/meal/waffle" },
+  ingredients: [
+		{ 
+			code: "wafflebatter", 
+			validStacks: [  { type: "item", code: "makingwaffles:wafflebatterportion", shapeElement: "batter/*" } ],
+			minQuantity: 2,
+			maxQuantity: 2,
+      portionSizeLitres: 0.1,
+      typeName: "grain"
+		}
+	],
+  isFood: true
+}

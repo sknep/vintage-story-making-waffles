@@ -1,0 +1,112 @@
+{
+  code: "waffleiron",
+	classByType: {
+		"*-null": "BlockCookingContainer",
+		"*-cooked": "BlockCookedContainer"
+	},
+  entityclassByType: {
+    "*-cooked": "CookedContainer"
+  },
+	behaviors: [
+		{ name: "GroundStorable", properties: { layout: 'SingleCenter', collisionBox: { x1: 0, y1: 0, z1: 0, x2: 1, y2: 0.25, z2: 1 } } },
+		{ name: "Unplaceable", }, // The ground storable obsoletes this being a block. Should be an item, but is kept a block for backwards compatibility
+	],
+  heldTpIdleAnimation: "holdbothhandslarge",
+  heldTpUseAnimation: "twohandplaceblock",
+  variantgroups: [
+    { code: "type", states: ["empty", "cooked"] }
+  ],
+  shape: { base: "makingwaffles:block/waffleiron-empty" },
+  textures: {
+    "iron": { base: "game:block/metal/ingot/iron" },
+    "middle": { base: "game:block/metal/ingot/iron" },
+    "batter": { base: "game:block/food/pie/amaranth2" },
+    "wood": { base: "game:block/wood/debarked/oak" },
+    "ceramic": { base: "game:block/transparent" },
+		"transparent": { base: "game:block/transparent" }
+  },
+  texturesByType: {
+    "waffleiron-empty": {
+      "middle": { 
+        base: "game:block/metal/ingot/iron" 
+      }
+    },
+    "waffleiron-cooked": {
+      "middle": { 
+        base: "game:block/food/pie/amaranth3" 
+      },
+      "iron": { 
+        base: "game:block/metal/ingot/iron", 
+      }
+    }
+  },
+  attributes: {
+    tempGlowMode: 1,
+    shelvable: true,
+    inFirePitProps: {
+      transform: {
+        scale: 0.64,
+        translation: { x: 0.2, y: 0.15, z: 0.025 },
+    		rotation: { x: -2, y: 80, z: -1 },
+        origin: { x: 0.5, y: 0.0625, z: 0.5 }
+      },
+      useFirepitModel: "Wide"
+    },
+		storageType: 1,
+    maxTemperature: 190,
+    emptiedBlockCode: "makingwaffles:waffleiron-empty"
+  },
+  attributesByType: {
+    "*-empty": {
+      cookingContainerSlots: 4,
+			maxContainerSlotStackSize: 8,
+      dirtiedBlockCode: null
+    },
+    "*-cooked": {
+      handbook: { exclude: true },
+      emptiedBlockCode: "makingwaffles:waffleiron-empty"
+    }
+  },
+  creativeinventory: { "general": ["*-empty"], "items": ["*-empty"] },
+  blockmaterial: "Metal",
+  replaceable: 400,
+	resistance: 1.5,
+	maxStackSizeByType: {
+		"*-cooked": 1,
+		"*": 8
+	},
+	lightAbsorption: 0,
+	sounds: {
+		walk: "walk/stone"
+	},
+	sideopaque: {
+		all: false
+	},
+	sidesolid: {
+		all: false
+	},
+  selectionbox: {
+		x1: 0.09375, y1: 0, z1: 0.1875, x2: 0.90625, y2: 0.2, z2: 0.8125,
+	},
+	collisionbox: {
+		x1: 0.09375, y1: 0, z1: 0.1875, x2: 0.90625, y2: 0.2, z2: 0.8125
+	},
+  guiTransform: {
+		translation: { x: 0, y: 0, z: 0 },
+		rotation: { x: -30, y: 224, z: -180 },
+		origin: { x: 0.5, y: 0.0625, z: 0.5 },
+		scale: 1.85
+	},
+	groundTransform: {
+		translation: { x: 0, y: 0, z: 0 },
+		rotation: { x: 0, y: 90, z: 0 },
+		origin: { x: 0.0, y: 0, z: 0.0 },
+    scale: 3.31
+  },
+  tpHandTransform: {
+		translation: { x: -0.6799, y: 0.06, z: -0.37 },
+		rotation: { x: -82, y: 19, z: -103 },
+		origin: { x: 0.5, y: 0, z: 0.5 },
+		scale: 0.76
+	}
+}
