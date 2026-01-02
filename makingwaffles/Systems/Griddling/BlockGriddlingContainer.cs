@@ -83,6 +83,35 @@ namespace MakingWaffles.Systems.Griddling
             return false;
         }
 
+        public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling)
+        {
+            if (blockSel?.Position == null) return;
+
+            BlockEntityFirepit? firepit = byEntity.World.BlockAccessor.GetBlockEntity(blockSel.Position) as BlockEntityFirepit;
+            if (firepit?.Inventory is not InventorySmelting inv) return;
+
+            ItemSlot inputSlot = inv[1];
+            if (inputSlot == null || !inputSlot.Empty) return;
+
+            if (byEntity.World.Side == EnumAppSide.Client)
+            {
+                handling = EnumHandHandling.PreventDefaultAction;
+                return;
+            }
+
+            ItemStack? placeStack = slot.TakeOut(1);
+            if (placeStack == null) return;
+
+            inputSlot.Itemstack = placeStack;
+            inputSlot.MarkDirty();
+            slot.MarkDirty();
+            firepit.MarkDirty(true);
+
+            IPlayer? byPlayer = (byEntity as EntityPlayer)?.Player;
+            byEntity.World.PlaySoundAt(Sounds.Place, blockSel.Position.X + 0.5, blockSel.Position.Y + 0.5, blockSel.Position.Z + 0.5, byPlayer);
+
+            handling = EnumHandHandling.PreventDefaultAction;
+        }
 
 
         public override float GetMeltingDuration(IWorldAccessor world, ISlotProvider cookingSlotsProvider, ItemSlot inputSlot)
@@ -200,7 +229,10 @@ namespace MakingWaffles.Systems.Griddling
                     cookingSlotsProvider.Slots[i].Itemstack = i == 0 ? stacks[0] : null;
                 }
                 ((BlockGriddledContainer)block).SetContents(recipe.Code, 1, outputStack, stacks);
-                inputSlot.Itemstack = outputStack;
+                outputSlot.Itemstack = outputStack;
+                inputSlot.Itemstack = null;
+                outputSlot.MarkDirty();
+                inputSlot.MarkDirty();
             }
             else
             {
@@ -236,7 +268,7 @@ namespace MakingWaffles.Systems.Griddling
                     message = "mealcreation-nonfood";
                     outputName = outStack?.GetName();
 
-                    if (quantity == -1) return Lang.Get("mealcreation-recipeerror", outputName?.ToLower() ?? Lang.Get("unknown"));
+                    if (quantity == -1) return Lang.Get("makingwaffles:griddle-recipeerror", outputName?.ToLower() ?? Lang.Get("unknown"));
                     quantity *= recipe.CooksInto.Quantity;
 
                     if (outStack?.Collectible.Attributes?["waterTightContainerProps"].Exists == true)
@@ -261,7 +293,7 @@ namespace MakingWaffles.Systems.Griddling
                     message = quantity == 1 ? "mealcreation-makesingular" : "mealcreation-makeplural";
                     // We need to use language plural format instead, here and all similar code!
                 }
-                if (quantity == -1) return Lang.Get("mealcreation-recipeerror", outputName?.ToLower() ?? Lang.Get("unknown"));
+                if (quantity == -1) return Lang.Get("makingwaffles:griddle-recipeerror", outputName?.ToLower() ?? Lang.Get("unknown"));
                 else if (quantity > MaxServingSize) return Lang.Get("mealcreation-toomuch", inputSlot.GetStackName(), quantity, outputName?.ToLower() ?? Lang.Get("unknown"));
                 return Lang.Get(message, quantity, outputName?.ToLower() ?? Lang.Get("unknown"));
             }

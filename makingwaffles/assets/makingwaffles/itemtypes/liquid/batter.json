@@ -4,7 +4,13 @@
 	matterState: "liquid",
 	attributes: {
 		handbook: {
-			ignoreCreativeInvStacks: true
+			ignoreCreativeInvStacks: true,
+			extraSections: [
+				{ 
+					text: "makingwaffles:handbook-batterportion-description",
+					title: "makingwaffles:handbook-batterportion-title"
+				}
+			],
 		},
 		inContainerTexture: { base: "game:block/food/pie/amaranth2" },
 		inBowlShape: { base: "game:block/food/meal/liquid" },
@@ -20,7 +26,7 @@
 				stack: { type: "item", code: "makingwaffles:batterportion" } 
 			},
 			nutritionPropsPerLitre: {
-				satiety: 30,
+				satiety: 40,
 				foodcategory: "Grain"
 			},
 		}

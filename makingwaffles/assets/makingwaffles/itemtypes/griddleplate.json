@@ -21,6 +21,7 @@
 			translation: { x: -1.03, y: -0.64, z: -1.015 },
 			rotation: { x: -83, y: -16, z: -3 }
 		},
+		shelvable: true,
   },
   sounds: {
 	"place": "game:block/chute",
@@ -32,7 +33,6 @@
   replaceable: 400,
 	resistance: 1.5,
 	lightAbsorption: 0,
-
 	sideopaque: {
 		all: false
 	},

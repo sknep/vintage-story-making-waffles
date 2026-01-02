@@ -1,9 +1,14 @@
 {
   "block-griddle": "Griddle",
-  "block-griddle-waffle-empty": "Waffle Griddle (Empty)",
+  "block-griddle-waffle-empty": "Waffle Griddle",
   "block-griddle-waffle-cooked": "Waffle Griddle (Cooked)",
   "item-griddleplate": "Griddle Plate",
   "item-griddleplate-waffle": "Waffle Griddle Plate",
+  "handbook-griddle-description": "Place the griddle in a firepit, as you would a cooking pot. Griddles only accept raw batter.",
+  "handbook-griddle-title": "Cooking on a Griddle",
   "item-waffle": "Waffle",
-  "item-batterportion": "Batter"
+  "item-batterportion": "Raw Waffle Batter",
+  "handbook-batterportion-description": "0.2L will bake into one waffle when cooked in a waffle griddle.",
+  "handbook-batterportion-title": "Conversion Ratio",
+  "griddle-recipeerror": "Batter amount must be a multiple of 0.2 L for {0}."
 }

@@ -5,6 +5,7 @@
       type: "item", 
       code: "game:flour-*", 
       allowedVariants: ["flax", "rice", "rye", "spelt", "cassava", "amaranth", "sunflower"],
+      name: "flour",
       quantity: 2,
       consumeQuantity: 2
     },
