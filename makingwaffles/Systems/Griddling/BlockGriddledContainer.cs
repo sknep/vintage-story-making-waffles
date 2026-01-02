@@ -189,7 +189,25 @@ namespace MakingWaffles.Systems.Griddling
 
         public EnumFirepitModel GetDesiredFirepitModel(ItemStack stack, BlockEntityFirepit firepit, bool forOutputSlot)
         {
-            return EnumFirepitModel.Wide;
+            return GetDesiredFirepitModelFromAttributes();
+        }
+
+        EnumFirepitModel GetDesiredFirepitModelFromAttributes()
+        {
+            string? model = Attributes?["inFirePitProps"]?["useFirepitModel"].AsString();
+            if (model == null) return EnumFirepitModel.Wide;
+
+            switch (model.ToLowerInvariant())
+            {
+                case "spit":
+                    return EnumFirepitModel.Spit;
+                case "normal":
+                    return EnumFirepitModel.Normal;
+                case "wide":
+                    return EnumFirepitModel.Wide;
+                default:
+                    return EnumFirepitModel.Wide;
+            }
         }
 
         public virtual bool ShouldSpawnGSParticles(IWorldAccessor world, ItemStack stack) => world.Rand.NextDouble() < (GetTemperature(world, stack) - 50) / 160 / 8;

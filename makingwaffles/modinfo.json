@@ -6,8 +6,8 @@
     "authors": [
         "MissesHex"
     ],
-    "description": "Making waffles (beta)",
-    "version": "0.0.1",
+    "description": "Adds a smithable griddle and griddling recipe for waffles.",
+    "version": "1.0.0",
     "dependencies": {
         "game": "1.21.0"
     }

@@ -74,13 +74,7 @@ namespace MakingWaffles.Systems.Griddling
                 return false;
             }
 
-            if (CanPlaceBlock(world, byPlayer, blockSel, ref failureCode) && world.BlockAccessor.GetBlock(blockSel.Position.DownCopy()).CanAttachBlockAt(world.BlockAccessor, this, blockSel.Position.DownCopy(), BlockFacing.UP, attachmentArea))
-            {
-                DoPlaceBlock(world, byPlayer, blockSel, itemstack);
-                return true;
-            }
-
-            return false;
+            return base.TryPlaceBlock(world, byPlayer, itemstack, blockSel, ref failureCode);
         }
 
         public override void OnHeldInteractStart(ItemSlot slot, EntityAgent byEntity, BlockSelection blockSel, EntitySelection entitySel, bool firstEvent, ref EnumHandHandling handling)
@@ -368,7 +362,25 @@ namespace MakingWaffles.Systems.Griddling
 
         public EnumFirepitModel GetDesiredFirepitModel(ItemStack stack, BlockEntityFirepit firepit, bool forOutputSlot)
         {
-            return EnumFirepitModel.Wide;
+            return GetDesiredFirepitModelFromAttributes();
+        }
+
+        EnumFirepitModel GetDesiredFirepitModelFromAttributes()
+        {
+            string? model = Attributes?["inFirePitProps"]?["useFirepitModel"].AsString();
+            if (model == null) return EnumFirepitModel.Wide;
+
+            switch (model.ToLowerInvariant())
+            {
+                case "spit":
+                    return EnumFirepitModel.Spit;
+                case "normal":
+                    return EnumFirepitModel.Normal;
+                case "wide":
+                    return EnumFirepitModel.Wide;
+                default:
+                    return EnumFirepitModel.Wide;
+            }
         }
 
 

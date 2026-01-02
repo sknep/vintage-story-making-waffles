@@ -8,8 +8,7 @@
     "*-cooked": "GriddledContainer"
   },
 	behaviors: [
-		{ name: "GroundStorable", properties: { layout: 'SingleCenter', collisionBox: { x1: 0, y1: 0, z1: 0, x2: 1, y2: 0.25, z2: 1 } } },
-		{ name: "Unplaceable", }, // The ground storable obsoletes this being a block. Should be an item, but is kept a block for backwards compatibility
+		{ name: "GroundStorable", properties: { layout: 'SingleCenter', collisionBox: { x1: 0, y1: 0, z1: 0, x2: 1, y2: 0.25, z2: 1 } } }
 	],
   heldTpIdleAnimation: "holdbothhandslarge",
   heldTpUseAnimation: "twohandplaceblock",
@@ -21,30 +20,33 @@
   textures: {
     "iron": { base: "game:block/metal/ingot/iron" },
     "iron-darker": { base: "game:block/metal/ingot/iron", overlays: ["game:block/slightlydarker"] },
-    "batter": { base: "game:block/food/pie/amaranth2" },
+    "batter": { base: "game:block/food/pie/amaranth3" },
     "wood": { base: "game:block/wood/debarked/oak" },
     "ceramic": { base: "game:block/transparent" },
 		"transparent": { base: "game:block/transparent" }
   },
   texturesByType: {
     "griddle-*-empty": {
-      "batter":  { base: "game:block/transparent" },
+      "batter": { base: "game:block/food/pie/spelt1" },
     },
     "griddle-*-cooked": {
-      "batter": { base: "game:block/food/pie/amaranth3" }
+      "batter": { base: "game:block/food/pie/amaranth3" },
     }
   },
   attributes: {
     tempGlowMode: 1,
     shelvable: true,
+    mealContainer: true,
     inFirePitProps: {
       transform: {
-        scale: 0.64,
-        translation: { x: 0.15, y: 0.15, z: 0.025 },
+        scale: 1,
+        translation: { x: 0.15, y: 0.15, z: 0.02 },
     		rotation: { x: -2, y: 80, z: -1 },
         origin: { x: 0.5, y: 0.0625, z: 0.5 }
       },
-      useFirepitModel: "Wide"
+      useFirepitModel: "Wide",
+      openEmptyShape: "makingwaffles:block/griddle-waffle-open-empty",
+      openFullShape: "makingwaffles:block/griddle-waffle-open-full"
     },
 		storageType: 1,
     maxTemperature: 190,
