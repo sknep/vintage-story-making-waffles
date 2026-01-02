@@ -1,5 +1,5 @@
 {
-  code: "wafflebatterportion",
+  code: "batterportion",
 	class: "ItemLiquidPortion",
 	matterState: "liquid",
 	attributes: {
@@ -17,7 +17,7 @@
 			allowSpill: true,
 			whenSpilled: { 
 				action: "DropContents",
-				stack: { type: "item", code: "makingwaffles:wafflebatterportion" } 
+				stack: { type: "item", code: "makingwaffles:batterportion" } 
 			},
 			nutritionPropsPerLitre: {
 				satiety: 30,
@@ -35,12 +35,12 @@
     transitionRatio: 0.2
   }],
 
-  creativeinventoryStacks: [ { tabs: ["general", "liquids"], stacks: [ { type: "block", code: "game:woodbucket", attributes: { ucontents: [ { type:"item", code: "makingwaffles:wafflebatterportion", makefull: true } ] } } ] } ],
+  creativeinventoryStacks: [ { tabs: ["general", "liquids"], stacks: [ { type: "block", code: "game:jug-tan-fired", attributes: { ucontents: [ { type:"item", code: "makingwaffles:batterportion", makefull: true } ] } } ] } ],
 	maxstacksize: 5000,
 	materialDensity: 200,
 	combustibleProps: {
 		meltingPoint: 190,
-		meltingDuration: 10,
+		meltingDuration: 15,
 		smeltedRatio: 1,
 		smeltingType: "convert",
 		smeltedStack: { type: "item", code: "makingwaffles:waffle" },

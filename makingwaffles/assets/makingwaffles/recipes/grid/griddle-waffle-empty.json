@@ -1,0 +1,13 @@
+[
+  {
+    ingredientPattern: "_P_,T_S,_P_",
+    ingredients: {
+      "P": { type: "item", code: "makingwaffles:griddleplate-waffle" },
+      "T": { type: "item", code: "game:tongs" },
+      "S": { type: "item", code: "game:metalnailsandstrips-*"}
+    },
+    width: 3,
+    height: 3,
+    output: { type: "block", code: "makingwaffles:griddle-waffle-empty" }
+  }
+]

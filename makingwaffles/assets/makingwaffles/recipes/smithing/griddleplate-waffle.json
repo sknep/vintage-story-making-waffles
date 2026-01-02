@@ -1,0 +1,24 @@
+{
+  ingredient: { type: "item", code: "game:ingot-iron" },
+  pattern: [
+      [
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######",
+      "#######"
+    ],[
+      "#######",
+      "#_#_#_#",
+      "#######",
+      "#_#_#_#",
+      "#######",
+      "#_#_#_#",
+      "#######"
+    ]
+  ],
+  name: "Griddle Waffle Plate",
+  output: { type: "item", code: "makingwaffles:griddleplate-waffle" }
+}

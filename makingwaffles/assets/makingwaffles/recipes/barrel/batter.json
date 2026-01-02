@@ -1,5 +1,5 @@
 {
-  code: "wafflebatter",
+  code: "batter",
   ingredients: [
     { 
       type: "item", 
@@ -11,9 +11,9 @@
     { 
       type: "item", 
       code: "game:milkportion",  
-      litres: 0.2 
+      litres: 0.4
     }
   ],
-  output: { type: "item", code: "makingwaffles:wafflebatterportion",  litres: 0.2 },
+  output: { type: "item", code: "makingwaffles:batterportion",  litres: 0.4 },
   perishableProps: { freshHours: { avg: 144 }, transitionHours: { avg: 48 }, transitionRatio: 1, transitionedStack: { type: "item", code: "game:rot" } },
 }

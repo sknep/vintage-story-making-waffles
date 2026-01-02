@@ -8,14 +8,15 @@
   },
   shape: { base: "makingwaffles:block/meal/waffle" },
   ingredients: [
-		{ 
-			code: "wafflebatter", 
-			validStacks: [  { type: "item", code: "makingwaffles:wafflebatterportion", shapeElement: "batter/*" } ],
-			minQuantity: 2,
-			maxQuantity: 2,
-      portionSizeLitres: 0.1,
+    { 
+      code: "batter", 
+      validStacks: [  { type: "item", code: "makingwaffles:batterportion", shapeElement: "batter/*" } ],
+      minQuantity: 1,
+      maxQuantity: 1,
+      portionSizeLitres: 0.2,
       typeName: "grain"
-		}
-	],
+    }
+  ],
+  cooksInto: { type: "item", code: "makingwaffles:waffle", quantity: 1 },
   isFood: true
 }
