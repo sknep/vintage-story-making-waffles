@@ -12,7 +12,6 @@
 				}
 			],
 		},
-		inContainerTexture: { base: "game:block/food/pie/amaranth2" },
 		inBowlShape: { base: "game:block/food/meal/liquid" },
 		nutritionPropsWhenInMeal: { satiety: 200, foodcategory: "Grain" },
 		waterTightContainerProps: {

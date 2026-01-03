@@ -20,9 +20,8 @@ public class MakingWafflesModSystem : ModSystem
         var harmony = new Harmony("makingwaffles.griddling");
         harmony.PatchAll();
 
-        api.RegisterBlockClass("BlockGriddlingContainer", typeof(Systems.Griddling.BlockGriddlingContainer));
-        api.RegisterBlockClass("BlockGriddledContainer", typeof(Systems.Griddling.BlockGriddledContainer));
-        api.RegisterBlockEntityClass("GriddledContainer", typeof(Systems.Griddling.BlockEntityGriddledContainer));
+            api.RegisterBlockClass("BlockGriddlingContainer", typeof(Systems.Griddling.BlockGriddlingContainer));
+            api.RegisterBlockEntityClass("GriddleContainer", typeof(Systems.Griddling.BlockEntityGriddleContainer));
     }
 
     public override void StartServerSide(ICoreServerAPI api)

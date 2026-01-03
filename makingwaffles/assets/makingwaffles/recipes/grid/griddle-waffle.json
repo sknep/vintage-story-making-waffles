@@ -8,6 +8,6 @@
     },
     width: 3,
     height: 3,
-    output: { type: "block", code: "makingwaffles:griddle-waffle-empty" }
+    output: { type: "block", code: "makingwaffles:griddle-waffle" }
   }
 ]

@@ -1,7 +1,6 @@
 {
   "block-griddle": "Griddle",
-  "block-griddle-waffle-empty": "Waffle Griddle",
-  "block-griddle-waffle-cooked": "Waffle Griddle (Cooked)",
+  "block-griddle-waffle": "Waffle Griddle",
   "item-griddleplate": "Griddle Plate",
   "item-griddleplate-waffle": "Waffle Griddle Plate",
   "handbook-griddle-description": "Place the griddle in a firepit, as you would a cooking pot. Griddles only accept raw batter.",

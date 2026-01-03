@@ -12,8 +12,8 @@ namespace MakingWaffles.Systems.Griddling
 {
     public class BlockGriddlingContainer : Block, IInFirepitRendererSupplier, IAttachableToEntity, IContainedCustomName
     {
+        public static SimpleParticleProperties smokeHeld;
         public int MaxServingSize = 8;
-        Cuboidi? attachmentArea;
         IAttachableToEntity? attrAtta;
 
         #region IAttachableToEntity
@@ -37,11 +37,28 @@ namespace MakingWaffles.Systems.Griddling
         {
             base.OnLoaded(api);
 
-            attachmentArea = Attributes?["attachmentArea"].AsObject<Cuboidi?>(null);
-
             MaxServingSize = Attributes?["maxServingSize"].AsInt(8) ?? 8;
 
             attrAtta = IAttachableToEntity.FromAttributes(this);
+        }
+
+        static BlockGriddlingContainer()
+        {
+            smokeHeld = new SimpleParticleProperties(
+                1, 1,
+                ColorUtil.ToRgba(50, 220, 220, 220),
+                new Vec3d(),
+                new Vec3d(),
+                new Vec3f(-0.05f, 0.1f, -0.05f),
+                new Vec3f(0.05f, 0.15f, 0.05f),
+                1.5f,
+                0,
+                0.25f,
+                0.35f,
+                EnumParticleModel.Quad
+            );
+            smokeHeld.SelfPropelled = true;
+            smokeHeld.AddPos.Set(0.1, 0.1, 0.1);
         }
 
         public override bool OnBlockInteractStart(IWorldAccessor world, IPlayer byPlayer, BlockSelection blockSel)
@@ -65,6 +82,21 @@ namespace MakingWaffles.Systems.Griddling
             return false;
         }
 
+
+        public override ItemStack OnPickBlock(IWorldAccessor world, BlockPos pos)
+        {
+            ItemStack stack = base.OnPickBlock(world, pos);
+
+            if (world.BlockAccessor.GetBlockEntity(pos) is BlockEntityGriddleContainer bec)
+            {
+                bec.WriteToItem(stack);
+                ItemStack[] contentStacks = bec.GetNonEmptyContentStacks();
+                float temp = contentStacks.Length > 0 ? contentStacks[0].Collectible.GetTemperature(world, contentStacks[0]) : 0;
+                SetTemperature(world, stack, temp, false);
+            }
+
+            return stack;
+        }
 
         public override bool TryPlaceBlock(IWorldAccessor world, IPlayer byPlayer, ItemStack itemstack, BlockSelection blockSel, ref string failureCode)
         {
@@ -176,7 +208,7 @@ namespace MakingWaffles.Systems.Griddling
             ItemStack[] stacks = GetCookingStacks(cookingSlotsProvider);
             CookingRecipe? recipe = GetMatchingCookingRecipe(world, stacks, out int quantityServings);
 
-            Block block = world.GetBlock(CodeWithVariant("state", "cooked"));
+            Block block = world.GetBlock(Code);
 
             if (recipe == null) return;
 
@@ -189,7 +221,7 @@ namespace MakingWaffles.Systems.Griddling
                 {
                     outstack.StackSize *= quantityServings;
                     stacks = [outstack];
-                    if (!recipe.IsFood) block = world.GetBlock(new AssetLocation(Attributes["dirtiedBlockCode"].AsString()));
+                    if (!recipe.IsFood) block = world.GetBlock(new AssetLocation(Attributes?["dirtiedBlockCode"]?.AsString() ?? Code.ToShortString()));
                 }
             }
             else
@@ -206,7 +238,7 @@ namespace MakingWaffles.Systems.Griddling
                 }
             }
 
-            ItemStack outputStack = new ItemStack(block);
+            ItemStack outputStack = recipe.CooksInto != null ? stacks[0].Clone() : new ItemStack(block);
             outputStack.Collectible.SetTemperature(world, outputStack, GetIngredientsTemperature(world, stacks));
 
             // Carry over and set perishable properties
@@ -216,28 +248,27 @@ namespace MakingWaffles.Systems.Griddling
             if (cookedPerishProps != null) CarryOverFreshness(api, cookingSlotsProvider.Slots, stacks, cookedPerishProps);
 
 
+            ItemSlot[] cookingSlots = GetProviderCookingSlots(cookingSlotsProvider);
+            for (int i = 0; i < cookingSlots.Length; i++)
+            {
+                cookingSlots[i].Itemstack = null;
+            }
+
             if (recipe.CooksInto != null)
             {
-                for (int i = 0; i < cookingSlotsProvider.Slots.Length; i++)
-                {
-                    cookingSlotsProvider.Slots[i].Itemstack = i == 0 ? stacks[0] : null;
-                }
-                ((BlockGriddledContainer)block).SetContents(recipe.Code, 1, outputStack, stacks);
+                // Output the cooked items directly, keep griddle in place (now empty)
+                outputSlot.Itemstack = outputStack;
+                inputSlot.MarkDirty();
+                outputSlot.MarkDirty();
+            }
+            else
+            {
+                // Store contents on the same block/item and move it to output
+                SetContents(recipe.Code, quantityServings, outputStack, stacks);
                 outputSlot.Itemstack = outputStack;
                 inputSlot.Itemstack = null;
                 outputSlot.MarkDirty();
                 inputSlot.MarkDirty();
-            }
-            else
-            {
-                for (int i = 0; i < cookingSlotsProvider.Slots.Length; i++)
-                {
-                    cookingSlotsProvider.Slots[i].Itemstack = null;
-                }
-                ((BlockGriddledContainer)block).SetContents(recipe.Code, quantityServings, outputStack, stacks);
-
-                outputSlot.Itemstack = outputStack;
-                inputSlot.Itemstack = null;
             }
         }
 
@@ -259,7 +290,7 @@ namespace MakingWaffles.Systems.Griddling
                 {
                     ItemStack outStack = recipe.CooksInto.ResolvedItemstack;
 
-                    message = "mealcreation-nonfood";
+                    message = "mealcreation-nonfood"; // should this be nonfood?
                     outputName = outStack?.GetName();
 
                     if (quantity == -1) return Lang.Get("makingwaffles:griddle-recipeerror", outputName?.ToLower() ?? Lang.Get("unknown"));
@@ -341,13 +372,23 @@ namespace MakingWaffles.Systems.Griddling
 
 
 
+        ItemSlot[] GetProviderCookingSlots(ISlotProvider cookingSlotsProvider)
+        {
+            if (cookingSlotsProvider is InventorySmelting inv && inv.CookingSlots.Length > 0)
+            {
+                return inv.CookingSlots;
+            }
+            return cookingSlotsProvider.Slots;
+        }
+
         public ItemStack[] GetCookingStacks(ISlotProvider cookingSlotsProvider, bool clone = true)
         {
             List<ItemStack> stacks = new List<ItemStack>(4);
+            ItemSlot[] cookingSlots = GetProviderCookingSlots(cookingSlotsProvider);
 
-            for (int i = 0; i < cookingSlotsProvider.Slots.Length; i++)
+            for (int i = 0; i < cookingSlots.Length; i++)
             {
-                ItemStack? stack = cookingSlotsProvider.Slots[i].Itemstack;
+                ItemStack? stack = cookingSlots[i].Itemstack;
                 if (stack == null) continue;
                 stacks.Add(clone ? stack.Clone() : stack);
             }
@@ -404,5 +445,43 @@ namespace MakingWaffles.Systems.Griddling
         {
             return Lang.GetWithFallback("contained-empty-container", "{0} (Empty)", inSlot.GetStackName());
         }
+
+        public ItemStack[] GetNonEmptyContents(IWorldAccessor world, ItemStack? containerStack, bool clone = true)
+        {
+            if (containerStack == null) return Array.Empty<ItemStack>();
+            List<ItemStack> stacks = new List<ItemStack>(4);
+            for (int i = 0; i < 4; i++)
+            {
+                ItemStack? stack = containerStack.Attributes.GetItemstack("contents" + i);
+                if (stack == null) continue;
+                if (clone) stack = stack.Clone();
+                stacks.Add(stack);
+            }
+            return stacks.Where(s => s != null && s.StackSize > 0).ToArray();
+        }
+
+        public void SetContents(string? recipeCode, int quantityServings, ItemStack containerStack, ItemStack[] contents)
+        {
+            containerStack.Attributes.SetString("recipeCode", recipeCode ?? string.Empty);
+            containerStack.Attributes.SetFloat("quantityServings", quantityServings);
+            // persist up to 4 contents as in vanilla cooked containers
+            for (int i = 0; i < 4; i++)
+            {
+                string key = "contents" + i;
+                containerStack.Attributes.SetItemstack(key, i < contents.Length ? contents[i] : null);
+            }
+        }
+
+        string DescribeStacks(ItemStack[] stacks)
+        {
+            List<string> parts = new List<string>();
+            for (int i = 0; i < stacks.Length; i++)
+            {
+                if (stacks[i] == null) continue;
+                parts.Add($"{stacks[i].StackSize}x{stacks[i].Collectible?.Code}");
+            }
+            return string.Join(",", parts);
+        }
+
     }
 }

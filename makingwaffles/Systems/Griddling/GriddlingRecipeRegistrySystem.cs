@@ -18,6 +18,8 @@ namespace MakingWaffles.Systems.Griddling
         {
             if (api is not ICoreServerAPI sapi) return;
 
+            // not a typo: "grriddling" is correct here. The game eagerly matches "recipes/grid" so 
+            // any new system/recipe name may not start with a substring of another system. Grrrr.
             Dictionary<AssetLocation, JToken> recipes = sapi.Assets.GetMany<JToken>(sapi.Server.Logger, "recipes/grriddling");
 
             foreach (var val in recipes)
@@ -36,6 +38,7 @@ namespace MakingWaffles.Systems.Griddling
             }
 
             sapi.World.Logger.Event("{0} griddling recipes loaded", recipes.Count);
+            // can we pick our own descriptive text here?
             sapi.World.Logger.StoryEvent(Lang.Get("Taste and smell..."));
         }
 

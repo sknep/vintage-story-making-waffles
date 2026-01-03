@@ -10,7 +10,7 @@
   ingredients: [
     { 
       code: "batter", 
-      validStacks: [  { type: "item", code: "makingwaffles:batterportion", shapeElement: "batter/*" } ],
+      validStacks: [  { type: "item", code: "makingwaffles:batterportion" } ],
       minQuantity: 1,
       maxQuantity: 1,
       portionSizeLitres: 0.2,

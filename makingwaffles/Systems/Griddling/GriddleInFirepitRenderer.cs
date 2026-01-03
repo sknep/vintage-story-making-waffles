@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
@@ -14,9 +15,10 @@ namespace MakingWaffles.Systems.Griddling
         public int RenderRange => 20;
 
         ICoreClientAPI capi;
-        MultiTextureMeshRef griddleRef;
+        MultiTextureMeshRef griddleClosedRef;
         MultiTextureMeshRef griddleOpenEmptyRef;
-        MultiTextureMeshRef griddleOpenFullRef;
+        MultiTextureMeshRef griddleOpenRawRef;
+        MultiTextureMeshRef griddleOpenCookedRef;
         BlockPos pos;
         float temp;
         bool hasIngredients;
@@ -45,15 +47,9 @@ namespace MakingWaffles.Systems.Griddling
             this.capi = capi;
             this.pos = pos;
             this.isInOutputSlot = isInOutputSlot;
-            bool stackIsCooked = stack?.Collectible is BlockGriddledContainer;
-            hasCookedOutputCached = stackIsCooked || isInOutputSlot;
-            useOpenFullShape = stackIsCooked;
-            useOpenEmptyShape = !stackIsCooked;
-
-            if (stack?.Collectible is Block block)
-            {
-                RebuildMeshes(block, stack);
-            }
+            hasCookedOutputCached = false;
+            useOpenFullShape = false;
+            useOpenEmptyShape = true;
 
             InFirePitProps renderProps = stack.ItemAttributes?["inFirePitProps"].AsObject<InFirePitProps>();
             if (renderProps == null)
@@ -63,38 +59,23 @@ namespace MakingWaffles.Systems.Griddling
             renderTransform = renderProps?.Transform ?? new ModelTransform();
             renderTransform.EnsureDefaultValues();
 
-            string? openEmptyCode = stack.ItemAttributes?["inFirePitProps"]?["openEmptyShape"].AsString();
-            if (openEmptyCode == null)
-            {
-                openEmptyCode = stack.Collectible.Attributes?["inFirePitProps"]?["openEmptyShape"].AsString();
-            }
+            openEmptyShapeLoc = ResolveShape(stack, "openEmptyShape");
+            openRawShapeLoc = ResolveShape(stack, "openRawShape");
+            openCookedShapeLoc = ResolveShape(stack, "openCookedShape");
+            closedShapeLoc = ResolveShape(stack, "closedShape") ?? AssetLocation.Create("makingwaffles:block/griddle-waffle-closed", stack.Collectible.Code.Domain).WithPathPrefixOnce("shapes/").WithPathAppendixOnce(".json");
 
-            if (openEmptyCode != null)
+            if (stack?.Collectible is Block block)
             {
-                openEmptyShapeLoc = AssetLocation.Create(openEmptyCode, stack.Collectible.Code.Domain)
-                    .WithPathPrefixOnce("shapes/")
-                    .WithPathAppendixOnce(".json");
-            }
-
-            string? openFullCode = stack.ItemAttributes?["inFirePitProps"]?["openFullShape"].AsString();
-            if (openFullCode == null)
-            {
-                openFullCode = stack.Collectible.Attributes?["inFirePitProps"]?["openFullShape"].AsString();
-            }
-
-            if (openFullCode != null)
-            {
-                openFullShapeLoc = AssetLocation.Create(openFullCode, stack.Collectible.Code.Domain)
-                    .WithPathPrefixOnce("shapes/")
-                    .WithPathAppendixOnce(".json");
+                RebuildMeshes(block, stack);
             }
         }
 
         public void Dispose()
         {
-            griddleRef?.Dispose();
+            griddleClosedRef?.Dispose();
             griddleOpenEmptyRef?.Dispose();
-            griddleOpenFullRef?.Dispose();
+            griddleOpenRawRef?.Dispose();
+            griddleOpenCookedRef?.Dispose();
 
             cookingSound?.Stop();
             cookingSound?.Dispose();
@@ -104,7 +85,7 @@ namespace MakingWaffles.Systems.Griddling
 
         public void OnRenderFrame(float deltaTime, EnumRenderStage stage)
         {
-            if (griddleRef == null) return;
+            if (griddleClosedRef == null && griddleOpenEmptyRef == null && griddleOpenRawRef == null && griddleOpenCookedRef == null) return;
 
             IRenderAPI rpi = capi.Render;
             Vec3d camPos = capi.World.Player.Entity.CameraPos;
@@ -145,17 +126,28 @@ namespace MakingWaffles.Systems.Griddling
             prog.ExtraGlow = (int)(glowIntensity * 60);
             if (glowIntensity > 0f)
             {
-                // red, green, blue, alpha adjusted by glow intensity as a factor
                 prog.RgbaTint = new Vec4f(1f, 0.85f - 0.25f * glowIntensity, 0.85f - 0.35f * glowIntensity, 1f);
             }
             else
             {
                 prog.RgbaTint = ColorUtil.WhiteArgbVec;
             }
-            MultiTextureMeshRef activeRef = griddleRef;
-            if (useOpenFullShape && griddleOpenFullRef != null)
+            MultiTextureMeshRef activeRef = griddleClosedRef;
+            if (useOpenFullShape)
             {
-                activeRef = griddleOpenFullRef;
+                // prioritize cooked vs raw
+                if (hasCookedOutput && griddleOpenCookedRef != null)
+                {
+                    activeRef = griddleOpenCookedRef;
+                }
+                else if (griddleOpenRawRef != null)
+                {
+                    activeRef = griddleOpenRawRef;
+                }
+                else if (griddleOpenEmptyRef != null)
+                {
+                    activeRef = griddleOpenEmptyRef;
+                }
             }
             else if (useOpenEmptyShape && griddleOpenEmptyRef != null)
             {
@@ -176,19 +168,21 @@ namespace MakingWaffles.Systems.Griddling
 
             hasIngredients = false;
             hasRecipeMatch = false;
+            hasCookedOutput = false;
             if (capi.World.BlockAccessor.GetBlockEntity(pos) is BlockEntityFirepit be && be.Inventory is InventorySmelting inv)
             {
-                bool cookedInOutput = inv[2]?.Itemstack?.Collectible is BlockGriddledContainer;
-                bool emptyInput = inv[1]?.Itemstack?.Collectible is BlockGriddlingContainer;
-                if (cookedInOutput)
+                ItemStack? outputStack = inv[2]?.Itemstack;
+                if (outputStack?.Collectible == null && outputStack != null)
                 {
-                    hasCookedOutputCached = true;
+                    outputStack.ResolveBlockOrItem(capi.World);
                 }
-                else if (emptyInput)
+
+                ItemStack? inputStack = inv[1]?.Itemstack;
+                if (inputStack?.Collectible == null && inputStack != null)
                 {
-                    hasCookedOutputCached = false;
+                    inputStack.ResolveBlockOrItem(capi.World);
                 }
-                hasCookedOutput = hasCookedOutputCached;
+
                 ItemSlot[] cookingSlots = inv.CookingSlots;
                 for (int i = 0; i < cookingSlots.Length; i++)
                 {
@@ -204,6 +198,25 @@ namespace MakingWaffles.Systems.Griddling
                     ItemStack[] stacks = griddle.GetCookingStacks(inv, false);
                     CookingRecipe? recipe = griddle.GetMatchingCookingRecipe(capi.World, stacks, out int servings);
                     hasRecipeMatch = recipe != null && servings > 0 && servings <= griddle.MaxServingSize;
+                    hasCookedOutput |= !hasIngredients && recipe == null && stacks.Any(s => s != null);
+
+                    // If waffles already exist in the firepit output, treat as cooked output for mesh choice
+                    ItemStack? firepitOutput = inv[2]?.Itemstack;
+                    if (firepitOutput != null && firepitOutput.StackSize > 0)
+                    {
+                        hasCookedOutput = true;
+                    }
+                }
+                else
+                {
+                    hasCookedOutput |= hasCookedOutputCached;
+                }
+
+                // Look for cooked contents in output
+                if (outputStack?.Collectible is BlockGriddlingContainer griddleOut)
+                {
+                    ItemStack[] baked = griddleOut.GetNonEmptyContents(capi.World, outputStack, false);
+                    hasCookedOutput |= baked.Length > 0;
                 }
             }
 
@@ -213,10 +226,10 @@ namespace MakingWaffles.Systems.Griddling
             }
             lastHasIngredients = hasIngredients;
 
-            glowIntensity = (!isInOutputSlot && hasIngredients) ? GameMath.Clamp((temp - 80) / 110, 0, 1) : 0;
-            bool isCooking = glowIntensity > 0f;
-            useOpenFullShape = hasCookedOutput || (!isCooking && hasRecipeMatch);
-            useOpenEmptyShape = !hasCookedOutput && !isCooking && !hasRecipeMatch;
+            glowIntensity = (!isInOutputSlot && hasIngredients && hasRecipeMatch) ? GameMath.Clamp((temp - 80) / 110, 0, 1) : 0;
+            bool isCooking = hasRecipeMatch && glowIntensity > 0f;
+            useOpenFullShape = !isCooking && (hasCookedOutput || hasRecipeMatch || hasIngredients);
+            useOpenEmptyShape = !isCooking && !hasCookedOutput && !hasIngredients && !hasRecipeMatch;
 
             float soundIntensity = glowIntensity;
             SetCookingSoundVolume(isInOutputSlot ? 0 : soundIntensity);
@@ -295,9 +308,6 @@ namespace MakingWaffles.Systems.Griddling
             lastVolume = volume;
         }
 
-        AssetLocation openEmptyShapeLoc;
-        AssetLocation openFullShapeLoc;
-
         void UpdateMeshesFromFirepit()
         {
             if (capi.World.BlockAccessor.GetBlockEntity(pos) is not BlockEntityFirepit be || be.Inventory is not InventorySmelting inv)
@@ -306,98 +316,80 @@ namespace MakingWaffles.Systems.Griddling
             }
 
             ItemSlot slot = inv[2];
-            if (slot?.Itemstack?.Collectible is not BlockGriddledContainer)
+            if (slot?.Itemstack?.Collectible == null && slot?.Itemstack != null)
+            {
+                slot.Itemstack.ResolveBlockOrItem(capi.World);
+            }
+            if (slot?.Itemstack?.Collectible is not BlockGriddlingContainer)
             {
                 slot = inv[1];
+                if (slot?.Itemstack?.Collectible == null && slot?.Itemstack != null)
+                {
+                    slot.Itemstack.ResolveBlockOrItem(capi.World);
+                }
                 if (slot?.Itemstack?.Collectible is not BlockGriddlingContainer)
                 {
                     return;
                 }
             }
-            Block? slotBlock = slot?.Itemstack?.Block;
+            Block? slotBlock = slot?.Itemstack?.Block ?? slot?.Itemstack?.Collectible as Block;
             ItemStack slotStack = slot.Itemstack;
             if (slotBlock == null || slotBlock.Id == 0) return;
-            if (slotStack?.Collectible is BlockGriddledContainer)
-            {
-                hasCookedOutputCached = true;
-            }
-            else if (slotStack?.Collectible is BlockGriddlingContainer)
-            {
-                hasCookedOutputCached = false;
-            }
+            hasCookedOutputCached = false;
 
             string nextKey = slotStack?.Collectible?.Code?.ToString() ?? string.Empty;
-            if (slotBlock.Id == griddleBlockId && nextKey == griddleCodeKey) return;
+            if (slotBlock.Id == griddleBlockId && nextKey == griddleCodeKey && griddleClosedRef != null) return;
 
             RebuildMeshes(slotBlock, slotStack);
         }
 
         void RebuildMeshes(Block block, ItemStack stack)
         {
-            griddleRef?.Dispose();
+            griddleClosedRef?.Dispose();
             griddleOpenEmptyRef?.Dispose();
-            griddleOpenFullRef?.Dispose();
+            griddleOpenRawRef?.Dispose();
+            griddleOpenCookedRef?.Dispose();
 
             griddleBlock = block;
             griddleBlockId = block.Id;
             griddleCodeKey = stack?.Collectible?.Code?.ToString() ?? string.Empty;
 
-            capi.Tesselator.TesselateBlock(block, out MeshData griddleMesh);
-            griddleRef = capi.Render.UploadMultiTextureMesh(griddleMesh);
-
-            string? openEmptyCode = stack?.ItemAttributes?["inFirePitProps"]?["openEmptyShape"].AsString();
-            if (openEmptyCode == null)
-            {
-                openEmptyCode = block.Attributes?["inFirePitProps"]?["openEmptyShape"].AsString();
-            }
-
-            if (openEmptyCode != null)
-            {
-                openEmptyShapeLoc = AssetLocation.Create(openEmptyCode, block.Code.Domain)
-                    .WithPathPrefixOnce("shapes/")
-                    .WithPathAppendixOnce(".json");
-            }
-            else
-            {
-                openEmptyShapeLoc = null;
-            }
-
-            if (openEmptyShapeLoc != null)
-            {
-                Shape openShape = Shape.TryGet(capi, openEmptyShapeLoc);
-                if (openShape != null)
-                {
-                    capi.Tesselator.TesselateShape(block, openShape, out MeshData openMesh);
-                    griddleOpenEmptyRef = capi.Render.UploadMultiTextureMesh(openMesh);
-                }
-            }
-
-            string? openFullCode = stack?.ItemAttributes?["inFirePitProps"]?["openFullShape"].AsString();
-            if (openFullCode == null)
-            {
-                openFullCode = block.Attributes?["inFirePitProps"]?["openFullShape"].AsString();
-            }
-
-            if (openFullCode != null)
-            {
-                openFullShapeLoc = AssetLocation.Create(openFullCode, block.Code.Domain)
-                    .WithPathPrefixOnce("shapes/")
-                    .WithPathAppendixOnce(".json");
-            }
-            else
-            {
-                openFullShapeLoc = null;
-            }
-
-            if (openFullShapeLoc != null)
-            {
-                Shape openShape = Shape.TryGet(capi, openFullShapeLoc);
-                if (openShape != null)
-                {
-                    capi.Tesselator.TesselateShape(block, openShape, out MeshData openMesh);
-                    griddleOpenFullRef = capi.Render.UploadMultiTextureMesh(openMesh);
-                }
-            }
+            TesselateShapeOrBlock(block, closedShapeLoc, out griddleClosedRef);
+            TesselateShapeOrBlock(block, openEmptyShapeLoc, out griddleOpenEmptyRef);
+            TesselateShapeOrBlock(block, openRawShapeLoc, out griddleOpenRawRef);
+            TesselateShapeOrBlock(block, openCookedShapeLoc, out griddleOpenCookedRef);
         }
+
+        AssetLocation ResolveShape(ItemStack stack, string attrName)
+        {
+            string? code = stack.ItemAttributes?["inFirePitProps"]?[attrName].AsString();
+            if (code == null)
+            {
+                code = stack.Collectible.Attributes?["inFirePitProps"]?[attrName].AsString();
+            }
+            return code == null ? null : AssetLocation.Create(code, stack.Collectible.Code.Domain).WithPathPrefixOnce("shapes/").WithPathAppendixOnce(".json");
+        }
+
+        void TesselateShapeOrBlock(Block block, AssetLocation shapeLoc, out MultiTextureMeshRef meshRef)
+        {
+            meshRef = null;
+            if (shapeLoc == null)
+            {
+                capi.Tesselator.TesselateBlock(block, out MeshData mesh);
+                meshRef = capi.Render.UploadMultiTextureMesh(mesh);
+                return;
+            }
+
+            Shape shape = Shape.TryGet(capi, shapeLoc);
+            if (shape == null) return;
+
+            capi.Tesselator.TesselateShape(block, shape, out MeshData customMesh);
+            meshRef = capi.Render.UploadMultiTextureMesh(customMesh);
+        }
+
+        AssetLocation openEmptyShapeLoc;
+        AssetLocation openRawShapeLoc;
+        AssetLocation openCookedShapeLoc;
+        AssetLocation closedShapeLoc;
     }
 }

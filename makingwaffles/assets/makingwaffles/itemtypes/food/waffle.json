@@ -4,7 +4,7 @@
   behaviors: [
     { name: "GroundStorable", properties: { layout: 'Quadrants', collisionBox: { x1: 0, y1: 0, z1: 0, x2: 1, y2: 0.125, z2: 1 } } }
   ],
-  shape: { base: "makingwaffles:block/meal/waffle" },
+  shape: { base: "makingwaffles:item/waffle" },
   textures: { 
     "waffle": { base: "game:block/food/pie/amaranth3" },
     "batter": { base: "game:block/food/pie/amaranth3"},
