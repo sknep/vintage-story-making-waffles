@@ -8,6 +8,7 @@
   "handbook-griddle-title": "Cooking on a Griddle",
   "item-waffle": "Waffle",
   "item-batterportion": "Raw Waffle Batter",
+  "incontainer-item-batterportion": "Raw Waffle Batter",
   "handbook-batterportion-description": "0.2L will bake into one waffle when cooked in a waffle griddle.",
   "handbook-batterportion-title": "Conversion Ratio",
   "griddle-recipeerror": "Batter amount must be a multiple of 0.2 L for {0}."

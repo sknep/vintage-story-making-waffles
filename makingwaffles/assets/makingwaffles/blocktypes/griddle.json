@@ -79,7 +79,7 @@
     },
     // flat griddle not implemented yet
   },
-  combustibleProps: { meltingPoint: 1482, meltingDuration: 30, smeltedRatio: 1, smeltedStack: { type: "item", code: "game:ingot-iron" }, requiresContainer: false },
+  combustibleProps: { meltingPoint: 1482, meltingDuration: 30, smeltedRatio: 1, smeltedStack: { type: "item", code: "game:ingot-iron", stacksize: 4 }, requiresContainer: false },
   creativeinventory: { "general": ["*-empty"], "items": ["*-empty"] },
   blockmaterial: "Metal",
   replaceable: 400,

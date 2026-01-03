@@ -39,7 +39,7 @@
 	sidesolid: {
 		all: false
 	},
-  combustibleProps: { meltingPoint: 1482, meltingDuration: 30, smeltedRatio: 1, smeltedStack: { type: "item", code: "game:ingot-iron" }, requiresContainer: false },
+  combustibleProps: { meltingPoint: 1482, meltingDuration: 30, smeltedRatio: 1, smeltedStack: { type: "item", code: "game:ingot-iron", stacksize: 2 }, requiresContainer: false },
   fpHandTransform: {
 		translation: { x: -0.35, y: -0.15, z: 0 },
 		rotation: { x: 0, y: 0, z: 79 },
