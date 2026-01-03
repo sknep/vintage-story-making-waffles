@@ -290,13 +290,20 @@ namespace MakingWaffles.Systems.Griddling
                 {
                     ItemStack outStack = recipe.CooksInto.ResolvedItemstack;
 
-                    message = "mealcreation-nonfood"; // should this be nonfood?
                     outputName = outStack?.GetName();
+                    if (recipe.IsFood)
+                    {
+                        message = quantity == 1 ? "mealcreation-makesingular" : "mealcreation-makeplural";
+                    }
+                    else
+                    {
+                        message = "mealcreation-nonfood";
+                    }
 
                     if (quantity == -1) return Lang.Get("makingwaffles:griddle-recipeerror", outputName?.ToLower() ?? Lang.Get("unknown"));
                     quantity *= recipe.CooksInto.Quantity;
 
-                    if (outStack?.Collectible.Attributes?["waterTightContainerProps"].Exists == true)
+                    if (!recipe.IsFood && outStack?.Collectible.Attributes?["waterTightContainerProps"].Exists == true)
                     {
                         float litreFloat = quantity / BlockLiquidContainerBase.GetContainableProps(outStack)?.ItemsPerLitre ?? 1;
                         string litres;

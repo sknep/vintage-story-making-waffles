@@ -38,8 +38,8 @@ namespace MakingWaffles.Systems.Griddling
             }
 
             sapi.World.Logger.Event("{0} griddling recipes loaded", recipes.Count);
-            // can we pick our own descriptive text here?
-            sapi.World.Logger.StoryEvent(Lang.Get("Taste and smell..."));
+            sapi.World.Logger.StoryEvent(Lang.Get("makingwaffles:griddling-storyevent-loaded", "Taste and smell…"));
+            
         }
 
         private void LoadRecipe(ICoreServerAPI sapi, AssetLocation loc, JToken jrec)
