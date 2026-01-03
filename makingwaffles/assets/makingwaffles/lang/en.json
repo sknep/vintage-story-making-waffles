@@ -11,5 +11,6 @@
   "handbook-batterportion-description": "0.2L will bake into one waffle when cooked in a waffle griddle.",
   "handbook-batterportion-title": "Conversion Ratio",
   "griddle-recipeerror": "Batter amount must be a multiple of 0.2 L for {0}.",
+  "griddle-finished": "Remove your cooked items before adding more batter.",
   "griddling-storyevent-loaded": "Sizzle and sputter...",
 }

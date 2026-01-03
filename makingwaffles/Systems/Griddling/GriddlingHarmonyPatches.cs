@@ -1,9 +1,11 @@
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Emit;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.Common;
+using Vintagestory.API.Config;
 using Vintagestory.API.MathTools;
 using Vintagestory.GameContent;
 
@@ -14,9 +16,7 @@ namespace MakingWaffles.Systems.Griddling
         public static bool IsGriddleContainer(InventorySmelting inventory)
         {
             ItemSlot? inputSlot = inventory?[1];
-            ItemSlot? outputSlot = inventory?[2];
-            if (inputSlot?.Itemstack?.Collectible is BlockGriddlingContainer
-                || outputSlot?.Itemstack?.Collectible is BlockGriddlingContainer)
+            if (inputSlot?.Itemstack?.Collectible is BlockGriddlingContainer)
             {
                 return true;
             }
@@ -37,19 +37,16 @@ namespace MakingWaffles.Systems.Griddling
             if (inventory.Api?.Side != EnumAppSide.Server) return false;
 
             ItemSlot inputSlot = inventory[1];
-            ItemSlot outputSlot = inventory[2];
 
             bool removingFromInput = slot == inputSlot && slot.Itemstack?.Collectible is BlockGriddlingContainer;
-            bool removingFromOutput = slot == outputSlot && slot.Itemstack?.Collectible is BlockGriddlingContainer;
-            if (!removingFromInput && !removingFromOutput) return false;
+            if (!removingFromInput) return false;
 
             ItemStack? cookedStack = slot.Itemstack;
             if (cookedStack?.Collectible is null) return false;
 
             if (quantity <= 0) return false;
 
-            string? emptyCode = cookedStack.Collectible.Attributes?["emptiedBlockCode"]?.AsString();
-            AssetLocation emptyLoc = AssetLocation.CreateOrNull(emptyCode) ?? cookedStack.Collectible.Code;
+            AssetLocation emptyLoc = cookedStack.Collectible.Code;
             Block? emptyBlock = inventory.Api.World.GetBlock(emptyLoc);
             if (emptyBlock == null || emptyBlock.BlockId == 0) return false;
 
@@ -90,6 +87,40 @@ namespace MakingWaffles.Systems.Griddling
             takenStack = emptyStack;
             return true;
         }
+
+        public static bool HasGriddleOutput(InventorySmelting inventory)
+        {
+            ItemSlot? outputSlot = inventory?[2];
+            if (outputSlot == null || outputSlot.Empty) return false;
+
+            if (inventory.Api?.World != null && outputSlot.Itemstack?.Collectible is BlockGriddlingContainer griddle)
+            {
+                ItemStack[] baked = griddle.GetNonEmptyContents(inventory.Api.World, outputSlot.Itemstack, false);
+                if (baked.Length == 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public static bool TryGetAnyGriddleRecipe(InventorySmelting inventory, out BlockGriddlingContainer? griddle, out CookingRecipe? recipe)
+        {
+            griddle = null;
+            recipe = null;
+
+            ItemSlot? inputSlot = inventory?[1];
+            if (inputSlot?.Itemstack?.Collectible is not BlockGriddlingContainer griddleContainer) return false;
+            if (inventory.Api?.World == null) return false;
+
+            ItemStack[] stacks = griddleContainer.GetCookingStacks(inventory, false);
+            recipe = griddleContainer.GetMatchingCookingRecipe(inventory.Api.World, stacks, out _);
+            if (recipe == null) return false;
+
+            griddle = griddleContainer;
+            return true;
+        }
     }
 
     [HarmonyPatch(typeof(InventorySmelting), nameof(InventorySmelting.GetOutputText))]
@@ -106,45 +137,14 @@ namespace MakingWaffles.Systems.Griddling
                 return;
             }
 
-            __result = griddle.GetOutputText(__instance.Api.World, __instance, inputSlot);
-        }
-    }
-
-    [HarmonyPatch(typeof(InventorySmelting), nameof(InventorySmelting.OnItemSlotModified))]
-    public static class GriddlingEmptySwapPatch
-    {
-        public static void Postfix(InventorySmelting __instance, ItemSlot slot)
-        {
-            if (__instance.Api?.Side != EnumAppSide.Server) return;
-
-            ItemSlot? inputSlot = __instance?[1];
-            ItemSlot? outputSlot = __instance?[2];
-
-            ItemSlot? cookedSlot = inputSlot?.Itemstack?.Collectible is BlockGriddlingContainer
-                ? inputSlot
-                : null;
-
-            if (cookedSlot == null) return;
-            BlockGriddlingContainer cookedBlock = (BlockGriddlingContainer)cookedSlot.Itemstack.Collectible;
-
-            ItemSlot[] cookingSlots = __instance.CookingSlots;
-            for (int i = 0; i < cookingSlots.Length; i++)
+            // If cooked waffles are still in the output, prompt the player to clear them first
+            if (__instance[2]?.Empty == false)
             {
-                if (!cookingSlots[i].Empty) return;
+                __result = Lang.Get("makingwaffles:griddle-finished");
+                return;
             }
 
-            string? emptyCode = cookedBlock.Attributes?["emptiedBlockCode"]?.AsString();
-            AssetLocation emptyLoc = AssetLocation.CreateOrNull(emptyCode) ?? cookedBlock.Code;
-            Block? emptyBlock = __instance.Api.World.GetBlock(emptyLoc);
-            if (emptyBlock == null || emptyBlock.BlockId == 0) return;
-
-            ItemStack oldStack = cookedSlot.Itemstack;
-            ItemStack newStack = new ItemStack(emptyBlock);
-            float temp = oldStack.Collectible.GetTemperature(__instance.Api.World, oldStack);
-            newStack.Collectible.SetTemperature(__instance.Api.World, newStack, temp);
-
-            cookedSlot.Itemstack = newStack;
-            cookedSlot.MarkDirty();
+            __result = griddle.GetOutputText(__instance.Api.World, __instance, inputSlot);
         }
     }
 
@@ -156,8 +156,7 @@ namespace MakingWaffles.Systems.Griddling
             if (__result) return;
 
             ItemSlot? inputSlot = __instance?[1];
-            ItemSlot? outputSlot = __instance?[2];
-            if (inputSlot?.Itemstack?.Collectible is BlockGriddlingContainer || outputSlot?.Itemstack?.Collectible is BlockGriddlingContainer)
+            if (inputSlot?.Itemstack?.Collectible is BlockGriddlingContainer)
             {
                 __result = true;
             }
@@ -229,22 +228,27 @@ namespace MakingWaffles.Systems.Griddling
     [HarmonyPatch(typeof(InventorySmelting), nameof(InventorySmelting.CanContain))]
     public static class GriddlingSingleSlotContainPatch
     {
-        public static bool Prefix(InventorySmelting __instance, ItemSlot sinkSlot, ref bool __result)
+        public static bool Prefix(InventorySmelting __instance, ItemSlot sinkSlot, ItemSlot sourceSlot, ref bool __result)
         {
             if (!GriddlingSlotHelpers.IsGriddleContainer(__instance)) return true;
 
             ItemSlot[] cookingSlots = __instance.CookingSlots;
-            if (cookingSlots.Length == 0) return true;
+            bool isCookingSlot = Array.IndexOf(cookingSlots, sinkSlot) >= 0;
 
-            if (sinkSlot == cookingSlots[0]) return true;
-
-            for (int i = 1; i < cookingSlots.Length; i++)
+            // Only allow first cooking slot; block others
+            if (cookingSlots.Length > 0 && sinkSlot == cookingSlots[0])
             {
-                if (sinkSlot == cookingSlots[i])
+                if (GriddlingSlotHelpers.HasGriddleOutput(__instance))
                 {
                     __result = false;
                     return false;
                 }
+                return true;
+            }
+            if (isCookingSlot)
+            {
+                __result = false;
+                return false;
             }
 
             return true;
@@ -254,21 +258,59 @@ namespace MakingWaffles.Systems.Griddling
     [HarmonyPatch(typeof(InventorySmelting), nameof(InventorySmelting.GetSuitability))]
     public static class GriddlingSingleSlotSuitabilityPatch
     {
-        public static void Postfix(InventorySmelting __instance, ItemSlot targetSlot, ref float __result)
+        public static void Postfix(InventorySmelting __instance, ItemSlot sourceSlot, ItemSlot targetSlot, bool isMerge, ref float __result)
         {
             if (!GriddlingSlotHelpers.IsGriddleContainer(__instance)) return;
 
             ItemSlot[] cookingSlots = __instance.CookingSlots;
-            if (cookingSlots.Length == 0) return;
+            bool isCookingSlot = Array.IndexOf(cookingSlots, targetSlot) >= 0;
 
-            for (int i = 1; i < cookingSlots.Length; i++)
+            // Only first cooking slot is suitable
+            if (isCookingSlot && (cookingSlots.Length == 0 || targetSlot != cookingSlots[0]))
             {
-                if (targetSlot == cookingSlots[i])
-                {
-                    __result = 0f;
-                    return;
-                }
+                __result = 0f;
+                return;
             }
+
+            if (isCookingSlot && GriddlingSlotHelpers.HasGriddleOutput(__instance))
+            {
+                __result = 0f;
+                return;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(InventorySmelting), nameof(InventorySmelting.OnItemSlotModified))]
+    public static class GriddlingEjectOutputOnPourPatch
+    {
+        public static void Postfix(InventorySmelting __instance, ItemSlot slot)
+        {
+            if (!GriddlingSlotHelpers.IsGriddleContainer(__instance)) return;
+            if (__instance.Api?.Side != EnumAppSide.Server) return;
+
+            ItemSlot[] cookingSlots = __instance.CookingSlots;
+            bool isCookingSlot = Array.IndexOf(cookingSlots, slot) >= 0;
+            if (!isCookingSlot) return;
+
+            // Only eject if there is cooked output and the new contents form any griddle recipe
+            if (__instance[2]?.Empty != false) return;
+            if (!GriddlingSlotHelpers.TryGetAnyGriddleRecipe(__instance, out _, out _)) return;
+
+            ItemSlot outputSlot = __instance[2];
+            ItemStack? dropStack = outputSlot.Itemstack;
+            if (dropStack == null) return;
+
+            Vec3d dropPos = __instance.pos?.ToVec3d().Add(0.5, 0.5, 0.5) ?? new Vec3d();
+            __instance.Api.World.SpawnItemEntity(dropStack.Clone(), dropPos);
+
+            AssetLocation dropSound = new AssetLocation("sounds/player/throw");
+            if (dropSound != null)
+            {
+                __instance.Api.World.PlaySoundAt(dropSound, dropPos.X, dropPos.Y, dropPos.Z, null, true, 18, 1.8f);
+            }
+
+            outputSlot.Itemstack = null;
+            outputSlot.MarkDirty();
         }
     }
 }
