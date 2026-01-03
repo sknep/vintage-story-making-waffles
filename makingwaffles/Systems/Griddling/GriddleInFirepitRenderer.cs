@@ -24,6 +24,7 @@ namespace MakingWaffles.Systems.Griddling
         bool hasIngredients;
         bool lastHasIngredients;
         bool hasRecipeMatch;
+        bool hasAnyRecipe;
         bool hasCookedOutput;
         bool useOpenFullShape;
         bool useOpenEmptyShape;
@@ -168,6 +169,7 @@ namespace MakingWaffles.Systems.Griddling
 
             hasIngredients = false;
             hasRecipeMatch = false;
+            hasAnyRecipe = false;
             hasCookedOutput = false;
             if (capi.World.BlockAccessor.GetBlockEntity(pos) is BlockEntityFirepit be && be.Inventory is InventorySmelting inv)
             {
@@ -197,6 +199,7 @@ namespace MakingWaffles.Systems.Griddling
                 {
                     ItemStack[] stacks = griddle.GetCookingStacks(inv, false);
                     CookingRecipe? recipe = griddle.GetMatchingCookingRecipe(capi.World, stacks, out int servings);
+                    hasAnyRecipe = recipe != null;
                     hasRecipeMatch = recipe != null && servings > 0 && servings <= griddle.MaxServingSize;
                     hasCookedOutput |= !hasIngredients && recipe == null && stacks.Any(s => s != null);
 
@@ -228,8 +231,10 @@ namespace MakingWaffles.Systems.Griddling
 
             glowIntensity = (!isInOutputSlot && hasIngredients && hasRecipeMatch) ? GameMath.Clamp((temp - 80) / 110, 0, 1) : 0;
             bool isCooking = hasRecipeMatch && glowIntensity > 0f;
-            useOpenFullShape = !isCooking && (hasCookedOutput || hasRecipeMatch || hasIngredients);
-            useOpenEmptyShape = !isCooking && !hasCookedOutput && !hasIngredients && !hasRecipeMatch;
+            // Show raw/open-full when we have any griddleable recipe (even over/under quantity), or cooked output.
+            useOpenFullShape = !isCooking && (hasCookedOutput || hasAnyRecipe);
+            // Show empty when nothing griddleable is present.
+            useOpenEmptyShape = !isCooking && !hasCookedOutput && !hasAnyRecipe;
 
             float soundIntensity = glowIntensity;
             SetCookingSoundVolume(isInOutputSlot ? 0 : soundIntensity);
